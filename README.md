@@ -7,6 +7,8 @@ Supported tools for benchmarking:
 * Vector
 * Filebeat
 
+Works only on MacOS.
+
 How to run:
 * Run `make generate` to generate json bench data (only once)
 * Run `make bench` to run elasticsearch mock service
