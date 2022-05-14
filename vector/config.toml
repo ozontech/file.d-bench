@@ -1,0 +1,21 @@
+data_dir = "./"
+
+[sources.logs]
+    type = "file"
+    include = ["../bench-data/*.nljson"]
+    data_dir = './'
+    fingerprinting.strategy = "device_and_inode"
+
+[transforms.logs_parse_json]
+    inputs = [ "logs" ]
+    type = "json_parser"
+
+[sinks.elasticsearch]
+    type = "elasticsearch"
+    inputs = [ "logs" ]
+    endpoint = "http://127.0.0.1:9200"
+    mode = "normal"
+    pipeline = "pipeline-name"
+    compression = "none"
+    healthcheck = false
+    batch.max_bytes = 4194304

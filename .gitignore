@@ -1,0 +1,5 @@
+vector/logs
+filebeat/data
+file.d/offsets
+.DS_Store
+bench-data

@@ -1,0 +1,17 @@
+[SERVICE]
+  Flush        5
+  parsers_file parsers.toml
+
+[INPUT]
+  Name           tail
+  Path           bench-data/*.nljson
+  Parser         json
+  Read_from_Head True
+  Buffer_Max_Size 64k
+  Buffer_Chunk_Size 64k
+
+[OUTPUT]
+  Name  es
+  Host  127.0.0.1
+  Port  9200
+  Match *

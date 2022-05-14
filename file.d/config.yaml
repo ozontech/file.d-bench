@@ -1,0 +1,16 @@
+pipelines:
+  benchmark:
+    settings:
+      decoder: json
+      capacity: 1024
+    input:
+      type: file
+      persistence_mode: async
+      watching_dir: ./../bench-data/
+      filename_pattern: "*.nljson"
+      offsets_file: ./offsets
+      offsets_op: reset
+    output:
+      type: elasticsearch
+      endpoints:
+        - http://127.0.0.1:9200
