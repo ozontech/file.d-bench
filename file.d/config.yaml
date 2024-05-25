@@ -2,13 +2,13 @@ pipelines:
   benchmark:
     settings:
       decoder: json
-      capacity: 1024
+      capacity: 2048 # more capacity = more memory usage, but more throughput
     input:
       type: file
       persistence_mode: async
-      watching_dir: ./../bench-data/
+      watching_dir: ./bench-data/
       filename_pattern: "*.nljson"
-      offsets_file: ./offsets
+      offsets_file: ./file.d/offsets
       offsets_op: reset
     output:
       type: elasticsearch

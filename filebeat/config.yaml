@@ -4,11 +4,11 @@ filebeat.inputs:
     json.add_error_key: true
     json.message_key: message
     paths:
-      - ../bench-data/*.nljson
+      - ./bench-data/*.nljson
 
 output.elasticsearch:
   hosts: ["http://127.0.0.1:9200"]
-  bulk_max_size: 50
+  bulk_max_size: 1000
 
 logging.level: info
 logging.to_files: false
