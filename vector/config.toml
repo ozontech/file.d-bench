@@ -2,13 +2,17 @@ data_dir = "./"
 
 [sources.logs]
     type = "file"
-    include = ["../bench-data/*.nljson"]
+    include = ["./bench-data/*.nljson"]
     data_dir = './'
     fingerprinting.strategy = "device_and_inode"
 
-[transforms.logs_parse_json]
-    inputs = [ "logs" ]
-    type = "json_parser"
+[transforms.json_parser]
+    type = "remap"
+    inputs = ["logs"]
+    drop_on_error = false
+    source = '''
+    . |= object!(parse_json!(.message))
+    '''
 
 [sinks.elasticsearch]
     type = "elasticsearch"
