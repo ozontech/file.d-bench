@@ -1,15 +1,21 @@
 filebeat.inputs:
-  - type: log
-    json.keys_under_root: true
-    json.add_error_key: true
-    json.message_key: message
+  - type: filestream
+    id: bench-log-collector
     paths:
-      - ../bench-data/*.nljson
+      - ./bench-data/*.nljson
+    parsers:
+    - ndjson:
+        target: ""
+        keys_under_root: true
+        add_error_key: true
+        message_key: message
 
 output.elasticsearch:
   hosts: ["http://127.0.0.1:9200"]
-  bulk_max_size: 50
+  # bulk_max_size: 50  # bulk_max_size can be changed for tuning
 
 logging.level: info
 logging.to_files: false
 logging.to_stderr: true
+setup.ilm.enabled: false
+allow_older_versions: true

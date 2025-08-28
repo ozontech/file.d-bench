@@ -1,5 +1,7 @@
 # Filebeat
 
+**Note**: this page was last updated in 2022.
+
 ## Bench 1 - Version 7.15.2
 
 ### single file 500 MB
