@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/valyala/fasthttp"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -23,19 +25,48 @@ var (
 )
 
 var (
-	MethodGet               = []byte("GET")
-	MethodPost              = []byte("POST")
-	MethodPut               = []byte("PUT")
-	PathEmpty               = []byte("/")
-	PathLicense             = []byte("/_license")
-	PathXpack               = []byte("/_xpack")
-	PathFilebeatTemplate    = []byte("/_template/filebeat-7.15.2")
-	PathCatFilebeatTemplate = []byte("/_cat/templates/filebeat-7.15.2")
-	PathBulk                = []byte("/_bulk")
+	MethodHead = []byte("HEAD")
+	MethodGet  = []byte("GET")
+	MethodPost = []byte("POST")
+	MethodPut  = []byte("PUT")
+
+	PathEmpty   = []byte("/")
+	PathLicense = []byte("/_license")
+	PathXpack   = []byte("/_xpack")
+	PathBulk    = []byte("/_bulk")
+
+	PathFilebeatTemplatePrefix      = []byte("/_template/filebeat-")
+	PathCatFilebeatTemplatePrefix   = []byte("/_cat/templates/filebeat-")
+	PathIndexTemplateFilebeatPrefix = []byte("/_index_template/filebeat-")
 )
+
+var logger = getZapLogger()
+
+func getZapLogger() *zap.SugaredLogger {
+	return zap.New(
+		zapcore.NewCore(
+			zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
+				// TimeKey:        "ts",
+				LevelKey:       "level",
+				NameKey:        "Instance",
+				CallerKey:      "caller",
+				MessageKey:     "message",
+				StacktraceKey:  "stacktrace",
+				LineEnding:     zapcore.DefaultLineEnding,
+				EncodeLevel:    zapcore.LowercaseLevelEncoder,
+				EncodeTime:     zapcore.ISO8601TimeEncoder,
+				EncodeDuration: zapcore.SecondsDurationEncoder,
+				EncodeCaller:   zapcore.ShortCallerEncoder,
+			}),
+			zapcore.AddSync(os.Stdout),
+			zapcore.DebugLevel,
+		),
+	).Sugar()
+}
 
 func main() {
 	flag.Parse()
+	logger.Infof("filebeat %d", *filebeatBulkSize)
 	termChan := make(chan os.Signal, 2)
 	signal.Notify(termChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
 
@@ -129,6 +160,10 @@ func requestHandler(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("application/json; charset=utf8")
 	ctx.Response.Header.Set("X-elastic-product", "Elasticsearch")
 
+	if bytes.Equal(method, MethodHead) && bytes.HasPrefix(path, PathIndexTemplateFilebeatPrefix) {
+		return
+	}
+
 	// Filebeat wants to get some info
 	if bytes.Equal(method, MethodGet) {
 		switch {
@@ -176,14 +211,14 @@ func requestHandler(ctx *fasthttp.RequestCtx) {
 "security":{"available":true,"enabled":false},"slm":{"available":true,"enabled":true},"spatial":{"available":true,"enabled":true},
 "sql":{"available":true,"enabled":true},"transform":{"available":true,"enabled":true},"voting_only":{"available":true,"enabled":true},
 "watcher":{"available":false,"enabled":true}},"tagline":"You know, for X"}`)
-		case bytes.Equal(path, PathCatFilebeatTemplate):
+		case bytes.HasPrefix(path, PathCatFilebeatTemplatePrefix):
 			ctx.SetBody(filebeatTemplate)
 		}
 		return
 	}
 
 	// Filebeat puts template
-	if bytes.Equal(method, MethodPut) && bytes.Equal(path, PathFilebeatTemplate) {
+	if bytes.Equal(method, MethodPut) && bytes.HasPrefix(path, PathFilebeatTemplatePrefix) {
 		filebeatTemplate = ctx.PostBody()
 		ctx.SetBodyString("{\"took\":0,\"errors\":false}\n")
 		return
@@ -248,7 +283,7 @@ func requestHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	ctx.Error("Bad Request", fasthttp.StatusBadRequest)
+	ctx.Write([]byte("{}"))
 }
 
 func dumpReport(stats *Stats) {

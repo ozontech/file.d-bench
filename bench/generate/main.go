@@ -12,6 +12,8 @@ import (
 	"time"
 
 	insaneJSON "github.com/vitkovskii/insane-json"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -29,6 +31,30 @@ var (
 	workersCount = runtime.GOMAXPROCS(0)
 )
 
+var logger = getZapLogger()
+
+func getZapLogger() *zap.SugaredLogger {
+	return zap.New(
+		zapcore.NewCore(
+			zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
+				// TimeKey:        "ts",
+				LevelKey:       "level",
+				NameKey:        "Instance",
+				CallerKey:      "caller",
+				MessageKey:     "message",
+				StacktraceKey:  "stacktrace",
+				LineEnding:     zapcore.DefaultLineEnding,
+				EncodeLevel:    zapcore.LowercaseLevelEncoder,
+				EncodeTime:     zapcore.ISO8601TimeEncoder,
+				EncodeDuration: zapcore.SecondsDurationEncoder,
+				EncodeCaller:   zapcore.ShortCallerEncoder,
+			}),
+			zapcore.AddSync(os.Stdout),
+			zapcore.DebugLevel,
+		),
+	).Sugar()
+}
+
 func main() {
 	flag.Parse()
 	rand.Seed(time.Now().UnixNano()) // constant number is intended to repeat output
@@ -43,7 +69,7 @@ func main() {
 
 	jobs := make(chan int)
 
-	err = os.MkdirAll("./../bench-data", os.ModePerm)
+	err = os.MkdirAll("./bench-data", os.ModePerm)
 	if err != nil {
 		logger.Info(err.Error())
 		os.Exit(1)
@@ -67,27 +93,21 @@ func main() {
 }
 
 func getJSONFixtures() ([]*insaneJSON.Root, error) {
-	jsonFixtures := make([]*insaneJSON.Root, 0, 0)
+	jsonFixtures := make([]*insaneJSON.Root, 0)
 
-	//root, err := insaneJSON.DecodeFile("./fixtures/canada.json")
-	//if err != nil {
-	//	return nil, err
-	//}
-	//jsonFixtures = append(jsonFixtures, root)
-	//
 	//root, err = insaneJSON.DecodeFile("./fixtures/citm.json")
 	//if err != nil {
 	//	return nil, err
 	//}
 	//jsonFixtures = append(jsonFixtures, root)
 
-	root, err := insaneJSON.DecodeFile("./fixtures/twitter.json")
+	root, err := insaneJSON.DecodeFile("./bench/fixtures/twitter.json")
 	if err != nil {
 		return nil, err
 	}
 	jsonFixtures = append(jsonFixtures, root)
 
-	root, err = insaneJSON.DecodeFile("./fixtures/unknown.json")
+	root, err = insaneJSON.DecodeFile("./bench/fixtures/unknown.json")
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +174,7 @@ func worker(fileName string, lineCount int, fields []string, values []string, jo
 	queue := make([]*insaneJSON.Node, 0)
 	jsonOut := make([]byte, 0)
 	for j := range jobs {
-		fullFileName := fmt.Sprintf("../bench-data/%s-%04d.nljson", fileName, j)
+		fullFileName := fmt.Sprintf("./bench-data/%s-%04d.nljson", fileName, j)
 
 		curAvg := avgSizeTarget
 		buf = buf[:0]
@@ -221,12 +241,12 @@ func genFillNodes(root *insaneJSON.Root, node *insaneJSON.Node, fields []string,
 			val float64
 			t   string
 		}{
-			{0.2,"obj"},
-			{0.2,"arr"},
-			{0.3,"str"},
-			{0.1,"int"},
-			{0.1,"flt"},
-			{0.1,"bool"},
+			{0.2, "obj"},
+			{0.2, "arr"},
+			{0.3, "str"},
+			{0.1, "int"},
+			{0.1, "flt"},
+			{0.1, "bool"},
 		}
 		r := rand.Float64()
 
@@ -234,7 +254,7 @@ func genFillNodes(root *insaneJSON.Root, node *insaneJSON.Node, fields []string,
 			if r < x.val {
 				return x.t
 			}
-			r-=x.val
+			r -= x.val
 		}
 
 		return "null"
