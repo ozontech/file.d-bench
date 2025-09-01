@@ -2,15 +2,17 @@ pipelines:
   benchmark:
     settings:
       decoder: json
-      capacity: 1024
+      # capacity: 1024  # default capacity is 1024 it can be increased for tuning
     input:
       type: file
       persistence_mode: async
-      watching_dir: ./../bench-data/
+      watching_dir: ./bench-data/
       filename_pattern: "*.nljson"
-      offsets_file: ./offsets
+      offsets_file: ./file.d/offsets
       offsets_op: reset
     output:
       type: elasticsearch
       endpoints:
         - http://127.0.0.1:9200
+      # batch_size: 256  # default batch_size is capacity/4 it can be changed for tuning
+      # workers_count: 16  # default workers_count is gomaxprocs*4 (gomaxprocs is CPU cores amount) it can be changed for tuning

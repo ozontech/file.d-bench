@@ -2,36 +2,36 @@ OS := $(shell uname | awk '{print tolower($$0)}')
 
 .PHONY: generate
 generate:
-	pushd ./bench && \
-	rm ./bench-data/*.nljson 2> /dev/null || true && \
-	go mod download && go run ./generate.go ./logger.go -file-count 256 -line-count 4096 && \
-	popd
+	rm -f ./bench-data/*.nljson || true && \
+	go run ./bench/generate -file-count 2048 -line-count 4096
 
 .PHONY: bench
 bench:
-	go mod download && go run ./bench/bench.go ./bench/logger.go
+	go run ./bench/server
 
 .PHONY: bench-file-d
 bench-file-d:
-	pushd ./file.d && \
-	rm offsets || true && \
-	./file.d_$(OS) --config config.yaml && \
-	popd
-
-.PHONY: bench-fluent-bit
-bench-fluent-bit:
-	./fluentbit/fluent-bit fluent-bit -c fluentbit/config.toml
+	rm ./file.d/offsets || true && \
+	./file.d/file.d_$(OS) --config ./file.d/config.yaml --http :9005
 
 .PHONY: bench-filebeat
 bench-filebeat:
-	pushd ./filebeat && \
-	rm -r data || true && \
-	./filebeat_$(OS) -c config.yaml && \
-	popd
+	rm -r ./filebeat/data || true && \
+	./filebeat/filebeat_$(OS) -c ./filebeat/config.yaml
 
 .PHONY: bench-vector
 bench-vector:
-	pushd ./vector && \
-	rm -r ./logs || true && \
-	./vector_$(OS) --config config.toml && \
-	popd
+	rm -r ./vector/logs || true && \
+	./vector/vector_$(OS) --config ./vector/config.toml
+
+.PHONY: monitor-file-d
+monitor-file-d:
+	resources_monitor/monitor.sh 'file.d' '(bench|rm|monitor)'
+
+.PHONY: monitor-filebeat
+monitor-filebeat:
+	resources_monitor/monitor.sh 'filebeat' '(bench|rm|monitor)'
+
+.PHONY: monitor-vector
+monitor-vector:
+	resources_monitor/monitor.sh 'vector' '(bench|rm|monitor)'

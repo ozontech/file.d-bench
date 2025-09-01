@@ -1,5 +1,7 @@
 # Vector.dev
 
+**Note**: this page was last updated in 2022.
+
 ## Bench 1 - Version 0.18.X alpine
 
 ### single file 500 MB

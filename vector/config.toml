@@ -1,14 +1,18 @@
-data_dir = "./"
+data_dir = "./vector"
 
 [sources.logs]
     type = "file"
-    include = ["../bench-data/*.nljson"]
-    data_dir = './'
+    include = ["./bench-data/*.nljson"]
+    data_dir = './vector'
     fingerprinting.strategy = "device_and_inode"
 
 [transforms.logs_parse_json]
     inputs = [ "logs" ]
-    type = "json_parser"
+    type = "remap"
+    drop_on_error = false
+    source = '''
+    . = parse_json!(.message)
+    '''
 
 [sinks.elasticsearch]
     type = "elasticsearch"
@@ -18,4 +22,4 @@ data_dir = "./"
     pipeline = "pipeline-name"
     compression = "none"
     healthcheck = false
-    batch.max_bytes = 4194304
+    batch.max_bytes = 4194304  # batch.max_bytes can be changed for tuning
